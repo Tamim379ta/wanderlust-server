@@ -17,7 +17,10 @@ const client = new MongoClient(uri, {
   }
 });
 
-app.use(cors())
+app.use(cors({
+  origin: "https://wanderlust-eight-topaz.vercel.app",
+  credentials: true
+}))
 app.use(express.json())
 
 const JWKS = createRemoteJWKSet(
