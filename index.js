@@ -5,6 +5,7 @@ dotenv.config()
 const app = express()
 const port = process.env.PORT || 5000
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs')
 
 const uri = process.env.MONGO_URI
 
@@ -19,6 +20,20 @@ const client = new MongoClient(uri, {
 app.use(cors())
 app.use(express.json())
 
+const JWKS = createRemoteJWKSet(
+  new URL("http://localhost:3000/api/auth/jwks")
+)
+const middleware = async (req, res, next) => {
+  const header = req.headers.authrization;
+  const token = header.split(" ")[1]
+  if (!token) {
+    return res.status(401).json({ message: "unauthroized" })
+  }
+  const { payload } = await jwtVerify(token, JWKS)
+
+  next()
+}
+
 async function run() {
   try {
     await client.connect();
@@ -26,7 +41,7 @@ async function run() {
     const destinationCollection = database.collection("destination");
     const bookingCollection = database.collection("bookings");
 
-    app.post('/bookings', async (req, res) => {
+    app.post('/bookings', middleware, async (req, res) => {
       const booking = req.body;
       const result = await bookingCollection.insertOne(booking);
       res.json(result)
@@ -39,7 +54,7 @@ async function run() {
     })
 
     app.delete('/bookings/:bookingId', async (req, res) => {
-      const {bookingId} = req.params
+      const { bookingId } = req.params
       const result = await bookingCollection.deleteOne({
         _id: new ObjectId(bookingId)
       })
@@ -58,7 +73,7 @@ async function run() {
       res.json(result);
     })
 
-    app.get('/destination/:id', async (req, res) => {
+    app.get('/destination/:id', middleware, async (req, res) => {
       const id = req.params.id;
 
       const query = {
