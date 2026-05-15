@@ -21,7 +21,7 @@ app.use(cors())
 app.use(express.json())
 
 const JWKS = createRemoteJWKSet(
-  new URL("http://localhost:3000/api/auth/jwks")
+  new URL(`${process.env.CLIENT_URI}/api/auth/jwks`)
 )
 const middleware = async (req, res, next) => {
   const header = req.headers.authrization;
@@ -36,7 +36,8 @@ const middleware = async (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
+
     const database = client.db("wanderlust");
     const destinationCollection = database.collection("destination");
     const bookingCollection = database.collection("bookings");
@@ -104,7 +105,7 @@ async function run() {
     })
 
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // await client.close();
